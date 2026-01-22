@@ -23,15 +23,16 @@ A lightweight camera streaming solution for Raspberry Pi Zero W 2 with Camera Mo
 - Raspberry Pi OS (Bookworm or later)
 - Deno 2.x
 - Node.js 20+ (for React development)
-- `libcamera-apps` (install via `sudo apt install libcamera-apps`)
+- `rpicam-apps` (install via `sudo apt install rpicam-apps`)
 - `ffmpeg`
+- `npm` (for frontend build)
 
 ## Architecture
 
 ```
 Camera Module V3
     ↓
-libcamera-vid (capture)
+rpicam-vid (capture)
     ↓
 ffmpeg (encoding → HLS)
     ↓
@@ -57,7 +58,7 @@ Browser (Wi-Fi LAN access)
 - Stream start/stop controls
 
 **Streaming Pipeline**
-- `libcamera-vid` captures video from Camera V3
+- `rpicam-vid` captures video from Camera V3
 - `ffmpeg` encodes to H.264 and generates HLS segments
 - Segments served via Deno HTTP server
 - React client plays HLS stream in browser
@@ -70,8 +71,8 @@ Browser (Wi-Fi LAN access)
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install libcamera-apps (contains libcamera-vid)
-sudo apt install libcamera-apps -y
+# Install rpicam-apps (contains rpicam-vid)
+sudo apt install rpicam-apps -y
 
 # Install ffmpeg
 sudo apt install ffmpeg -y
@@ -99,6 +100,28 @@ npm install
 cd ..
 ```
 
+## Project Structure
+
+```
+backend/server.ts
+frontend/
+  index.html
+  package.json
+  tsconfig.json
+  tsconfig.node.json
+  vite.config.ts
+  src/
+    App.tsx
+    api.ts
+    index.css
+    main.tsx
+scripts/start-stream.sh
+scripts/run-prod.sh
+stream/
+.env
+README.md
+```
+
 ## Configuration
 
 ### Backend Configuration
@@ -121,16 +144,20 @@ CAMERA_HEIGHT=720
 CAMERA_FPS=15
 CAMERA_BITRATE=2000000
 
+# Frontend
+FRONTEND_DIR=./frontend/dist
+AUTO_START_STREAM=true
+
 # FFmpeg
 FFMPEG_PRESET=ultrafast
 ```
 
 ### Camera Setup
 
-Test camera with `libcamera-vid`:
+Test camera with `rpicam-vid`:
 
 ```bash
-libcamera-vid -t 0 --inline --inline-headers
+rpicam-vid -t 0 --inline --inline-headers
 ```
 
 ## Usage
@@ -139,9 +166,22 @@ libcamera-vid -t 0 --inline --inline-headers
 
 ```bash
 # Start HLS stream generation
-ffmpeg -f v4l2 -input_format h264 -video_size 1280x720 -framerate 15 \
-  -i /dev/video0 -c:v copy -hls_time 2 -hls_list_size 3 \
+rpicam-vid --inline --inline-headers --width 1280 --height 720 \
+  --framerate 15 --bitrate 2000000 --codec h264 -o - | \
+  ffmpeg -i - -c:v copy -f hls -hls_time 2 -hls_list_size 3 \
   -hls_flags delete_segments+append_list ./stream/index.m3u8
+```
+
+Or run the provided script:
+
+```bash
+bash scripts/start-stream.sh
+```
+
+### Production (Single Command)
+
+```bash
+bash scripts/run-prod.sh
 ```
 
 ### Starting the Backend
@@ -164,16 +204,14 @@ npm run dev
 
 # Production build
 npm run build
-# Then serve the build directory (e.g., with Deno)
-deno run --allow-net --allow-read https://deno.land/std/http/file_server.ts dist
 ```
 
 ### Access the Stream
 
 1. Connect to the same Wi-Fi network as your Raspberry Pi
 2. Open browser and navigate to:
-   - `http://raspberrypi.local:3000` (if mDNS is enabled)
-   - `http://<PI_IP_ADDRESS>:3000` (e.g., `http://192.168.1.50:3000`)
+   - `http://raspberrypi.local:8080` (if mDNS is enabled)
+   - `http://<PI_IP_ADDRESS>:8080` (e.g., `http://192.168.1.50:8080`)
 
 ## API Endpoints
 
