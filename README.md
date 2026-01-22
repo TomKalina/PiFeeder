@@ -213,6 +213,8 @@ npm run build
    - `http://raspberrypi.local:8080` (if mDNS is enabled)
    - `http://<PI_IP_ADDRESS>:8080` (e.g., `http://192.168.1.50:8080`)
 
+Logs are printed to stdout/stderr. If you see `Not found`, check the backend logs for the exact missing path.
+
 ## API Endpoints
 
 ### GET `/stream/index.m3u8`

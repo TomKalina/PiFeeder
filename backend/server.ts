@@ -181,13 +181,35 @@ async function handler(req: Request): Promise<Response> {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (url.pathname === "/api/status" && req.method === "GET") {
+  if (req.method !== "GET" && req.method !== "POST") {
+    console.error("Method not allowed", req.method, url.pathname);
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: corsHeaders,
+    });
+  }
+
+  if (url.pathname === "/api/status") {
+    if (req.method !== "GET") {
+      console.error("Status method not allowed", req.method);
+      return new Response("Method not allowed", {
+        status: 405,
+        headers: corsHeaders,
+      });
+    }
     return new Response(JSON.stringify(getStreamStatus()), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  if (url.pathname === "/api/start" && req.method === "POST") {
+  if (url.pathname === "/api/start") {
+    if (req.method !== "POST") {
+      console.error("Start method not allowed", req.method);
+      return new Response("Method not allowed", {
+        status: 405,
+        headers: corsHeaders,
+      });
+    }
     const result = await startStream();
     return new Response(JSON.stringify(result), {
       status: result.success ? 200 : 400,
@@ -195,7 +217,14 @@ async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (url.pathname === "/api/stop" && req.method === "POST") {
+  if (url.pathname === "/api/stop") {
+    if (req.method !== "POST") {
+      console.error("Stop method not allowed", req.method);
+      return new Response("Method not allowed", {
+        status: 405,
+        headers: corsHeaders,
+      });
+    }
     const result = await stopStream();
     return new Response(JSON.stringify(result), {
       status: result.success ? 200 : 400,
@@ -209,7 +238,8 @@ async function handler(req: Request): Promise<Response> {
 
     try {
       return await readFileResponse(filePath, url.pathname);
-    } catch {
+    } catch (error) {
+      console.error("Stream file not found", url.pathname, error);
       return new Response("File not found", {
         status: 404,
         headers: corsHeaders,
@@ -218,6 +248,7 @@ async function handler(req: Request): Promise<Response> {
   }
 
   if (url.pathname.startsWith("/api")) {
+    console.error("API route not found", url.pathname);
     return new Response("Not found", {
       status: 404,
       headers: corsHeaders,
@@ -230,6 +261,7 @@ async function handler(req: Request): Promise<Response> {
     const baseDir = resolve(FRONTEND_DIR);
 
     if (!filePath.startsWith(baseDir)) {
+      console.error("Frontend path outside base", filePath);
       return new Response("Not found", {
         status: 404,
         headers: corsHeaders,
@@ -237,7 +269,8 @@ async function handler(req: Request): Promise<Response> {
     }
 
     return await readFileResponse(filePath, relativePath);
-  } catch {
+  } catch (error) {
+    console.error("Frontend file not found", url.pathname, error);
     return new Response("Not found", {
       status: 404,
       headers: corsHeaders,
