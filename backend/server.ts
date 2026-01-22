@@ -60,6 +60,24 @@ async function readFileResponse(filePath: string, pathname: string) {
   });
 }
 
+async function logReadable(
+  readable: ReadableStream<Uint8Array>,
+  label: string
+) {
+  const reader = readable.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+    if (value) {
+      console.error(label, decoder.decode(value));
+    }
+  }
+}
+
 async function startStream() {
   if (cameraProcess || ffmpegProcess) {
     return { success: false, error: "Stream is already running" };
@@ -69,6 +87,8 @@ async function startStream() {
     await ensureStreamDir();
 
     const cameraArgs = [
+      "-t",
+      "0",
       "--inline",
       "--inline-headers",
       "--width",
@@ -113,6 +133,14 @@ async function startStream() {
       stdout: "piped",
       stderr: "piped",
     }).spawn();
+
+    if (cameraProcess.stderr) {
+      logReadable(cameraProcess.stderr, "rpicam-vid");
+    }
+
+    if (ffmpegProcess.stderr) {
+      logReadable(ffmpegProcess.stderr, "ffmpeg");
+    }
 
     if (cameraProcess.stdout && ffmpegProcess.stdin) {
       cameraProcess.stdout.pipeTo(ffmpegProcess.stdin).catch(() => {});
