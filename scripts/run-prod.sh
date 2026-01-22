@@ -10,4 +10,4 @@ npm install
 npm run build
 cd ..
 
-deno run --allow-net --allow-read --allow-write backend/server.ts
+deno run --allow-net --allow-read --allow-write --allow-run backend/server.ts
