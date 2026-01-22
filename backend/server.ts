@@ -90,7 +90,6 @@ async function startStream() {
       "-t",
       "0",
       "--inline",
-      "--inline-headers",
       "--width",
       cameraConfig.width.toString(),
       "--height",
