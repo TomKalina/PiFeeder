@@ -256,8 +256,10 @@ async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const relativePath = url.pathname === "/" ? "index.html" : url.pathname;
-    const filePath = resolve(FRONTEND_DIR, `.${relativePath}`);
+    const relativePath = url.pathname === "/"
+      ? "index.html"
+      : url.pathname.replace(/^\//, "");
+    const filePath = resolve(FRONTEND_DIR, relativePath);
     const baseDir = resolve(FRONTEND_DIR);
 
     if (!filePath.startsWith(baseDir)) {
